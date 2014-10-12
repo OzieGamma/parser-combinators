@@ -7,7 +7,7 @@ trait Parsers {
 
   abstract class Parser[+T] extends (Input => ParseResult[T]) {
 
-    def ~[U](that: => Parser[U]) = Parser[(T, U)] { in =>
+    def ~[U](inline that: => Parser[U]) = Parser[(T, U)] { in =>
       this(in) match {
         case f @ Failure(_) => f
         case Success(t, rest) => that(rest) match {
@@ -17,7 +17,7 @@ trait Parsers {
       }
     }
 
-    def |[U >: T](that: => Parser[U]) = Parser[U] { in =>
+    def |[U >: T](inline that: => Parser[U]) = Parser[U] { in =>
       this(in) match {
         case s @ Success(_, _) => s
         case Failure(_) => that(in)
@@ -117,11 +117,25 @@ object HelloParser extends CharParsers {
         }
     }
 
-    How could we inline this ? Seems very hard.
+    -> Parser[U] { in =>
+        if (!in.atEnd && (in.first == 'a')) Success(in.first, in.rest)
+        else {
+          if (!in.atEnd && (in.first == 'b')) Success(in.first, in.rest)
+          else Failure(in)
+        }
+      }
+
+    ->  new Parser[T] {
+          def apply(in: Input) =
+            if (!in.atEnd && (in.first == 'a')) {
+              Success(in.first, in.rest)
+            } else {
+              if (!in.atEnd && (in.first == 'b')) Success(in.first, in.rest)
+              else Failure(in)
+            }
+        }
+
   */
-
-
-
 
   val in2 = CharArrayReader("bossanova".toArray)
 
