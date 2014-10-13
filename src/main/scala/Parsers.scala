@@ -1,5 +1,6 @@
 package parsing
 
+@restricted
 trait Parsers {
 
   type Elem
@@ -7,7 +8,7 @@ trait Parsers {
 
   abstract class Parser[+T] extends (Input => ParseResult[T]) {
 
-    def ~[U](that: => Parser[U]) = Parser[(T, U)] { in =>
+    @inline def ~[U](@sinline that: => Parser[U]) = Parser[(T, U)] { in =>
       this(in) match {
         case f @ Failure(_) => f
         case Success(t, rest) => that(rest) match {
@@ -17,7 +18,7 @@ trait Parsers {
       }
     }
 
-    def |[U >: T](that: => Parser[U]) = Parser[U] { in =>
+    @inline def |[U >: T](@sinline that: => Parser[U]) = Parser[U] { in =>
       this(in) match {
         case s @ Success(_, _) => s
         case Failure(_) => that(in)
@@ -35,7 +36,7 @@ trait Parsers {
   case class Failure(next: Input) extends ParseResult[Nothing]
 
 
-  def Parser[T](f: Input => ParseResult[T]): Parser[T] = new Parser[T] {
+  @inline def Parser[T](inline f: Input => ParseResult[T]): Parser[T] = new Parser[T] {
     def apply(in: Input) = f(in)
   }
 
@@ -43,13 +44,12 @@ trait Parsers {
    * some basic combinators
    */
 
-  def acceptIf(p: Elem => Boolean) = Parser[Elem] { in =>
+  @inline def acceptIf(@sinline p: Elem => Boolean) = Parser[Elem] { in =>
     if (!in.atEnd && p(in.first)) Success(in.first, in.rest)
     else Failure(in)
   }
 
-  def accept(e: Elem) = acceptIf(_ == e)
-
+  @inline def accept(@sinline e: Elem) = acceptIf(_ == e)
 }
 
 
@@ -85,9 +85,57 @@ trait CharParsers extends Parsers {
 object HelloParser extends CharParsers {
 
   val a = accept('a')
+  /*
+    -> acceptIf(_ == 'a')
+    -> Parser[Elem] { in =>
+        if (!in.atEnd && (in.first == 'a')) Success(in.first, in.rest)
+        else Failure(in)
+      }
+    -> new Parser[T] {
+        def apply(in: Input) = { in =>
+            if (!in.atEnd && (in.first == 'a')) Success(in.first, in.rest)
+            else Failure(in)
+        }
+      }
+  */
+
+
   val in = CharArrayReader("aardvark".toArray)
 
   val aOrb = accept('a') | accept('b')
+  /*
+    Using what we found above about inlining, we have:
+    new Parser[T] {
+        def apply(in: Input) = { in =>
+            if (!in.atEnd && (in.first == 'a')) Success(in.first, in.rest)
+            else Failure(in)
+        }
+    } | new Parser[T] {
+        def apply(in: Input) = { in =>
+            if (!in.atEnd && (in.first == 'b')) Success(in.first, in.rest)
+            else Failure(in)
+        }
+    }
+
+    -> Parser[U] { in =>
+        if (!in.atEnd && (in.first == 'a')) Success(in.first, in.rest)
+        else {
+          if (!in.atEnd && (in.first == 'b')) Success(in.first, in.rest)
+          else Failure(in)
+        }
+      }
+
+    ->  new Parser[T] {
+          def apply(in: Input) =
+            if (!in.atEnd && (in.first == 'a')) {
+              Success(in.first, in.rest)
+            } else {
+              if (!in.atEnd && (in.first == 'b')) Success(in.first, in.rest)
+              else Failure(in)
+            }
+        }
+  */
+
   val in2 = CharArrayReader("bossanova".toArray)
 
   def main(args: Array[String]) {
