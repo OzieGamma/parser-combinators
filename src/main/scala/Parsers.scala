@@ -7,7 +7,7 @@ trait Parsers {
 
   abstract class Parser[+T] extends (Input => ParseResult[T]) {
 
-    def ~[U](that: => Parser[U] with Inline) = Parser[(T, U)] { in =>
+    def ~[U](that: => Parser[U] with Inline) /*: Parser[(T, U)] with Inline */ = Parser[(T, U)] { in =>
       this(in) match {
         case f @ Failure(_) => f
         case Success(t, rest) => that(rest) match {
@@ -17,7 +17,7 @@ trait Parsers {
       }
     }
 
-    def |[U >: T](that: => Parser[U] with Inline) = Parser[U] { in =>
+    def |[U >: T](that: => Parser[U] with Inline) /*: Parser[U] with Inline */ = Parser[U] { in =>
       this(in) match {
         case s @ Success(_, _) => s
         case Failure(_) => that(in)
@@ -43,7 +43,7 @@ trait Parsers {
    * some basic combinators
    */
 
-  def acceptIf(p: Inline[Elem => Boolean]) /*: Parser[Elem] with Inline */ = Parser[Elem] { in =>
+  def acceptIf(p: (Elem => Boolean) with Inline) /*: Parser[Elem] with Inline */ = Parser[Elem] { in =>
     if (!in.atEnd && p(in.first)) Success(in.first, in.rest)
     else Failure(in)
   }
