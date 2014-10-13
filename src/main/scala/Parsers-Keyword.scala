@@ -7,7 +7,7 @@ trait Parsers {
 
   abstract class Parser[+T] extends (Input => ParseResult[T]) {
 
-    def ~[U](inline that: => Parser[U]) = Parser[(T, U)] { in =>
+    def ~[U](@sinline that: => Parser[U]) = Parser[(T, U)] { in =>
       this(in) match {
         case f @ Failure(_) => f
         case Success(t, rest) => that(rest) match {
@@ -17,7 +17,7 @@ trait Parsers {
       }
     }
 
-    def |[U >: T](inline that: => Parser[U]) = Parser[U] { in =>
+    def |[U >: T](@sinline that: => Parser[U]) = Parser[U] { in =>
       this(in) match {
         case s @ Success(_, _) => s
         case Failure(_) => that(in)
@@ -43,12 +43,12 @@ trait Parsers {
    * some basic combinators
    */
 
-  def acceptIf(inline p: Elem => Boolean) = Parser[Elem] { in =>
+  def acceptIf(@sinline p: Elem => Boolean) = Parser[Elem] { in =>
     if (!in.atEnd && p(in.first)) Success(in.first, in.rest)
     else Failure(in)
   }
 
-  def accept(inline e: Elem) = acceptIf(_ == e)
+  def accept(@sinline e: Elem) = acceptIf(_ == e)
 
 }
 
@@ -134,7 +134,6 @@ object HelloParser extends CharParsers {
               else Failure(in)
             }
         }
-
   */
 
   val in2 = CharArrayReader("bossanova".toArray)
