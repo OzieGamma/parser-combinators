@@ -36,7 +36,7 @@ trait Parsers {
 
 
   def Parser[T](f: (Input => ParseResult[T]) with Inline): Parser[T] with Inline = new Parser[T] {
-    def apply(in: Input) = f(in)
+    def apply(in: Input): /* ParseResult[T] with Inline */ = f(in) with Inline // forces the compiler to inline it.
   }
 
   /**
